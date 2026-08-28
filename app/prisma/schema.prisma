@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+  ownedWorkspaces Workspace[] @relation("WorkspaceOwner")
+  comments Comment[]
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  ownerId   String   @db.Uuid
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner        User           @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  members      Membership[]
+  projects     Project[]
+  subscription Subscription?
+
+  @@index([ownerId])
+  @@map("workspaces")
+}
+
+model Membership {
+  userId      String        @db.Uuid
+  workspaceId String        @db.Uuid
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+  @@index([workspaceId])
+  @@map("memberships")
+}
+
+model Project {
+  id          String        @id @default(uuid()) @db.Uuid
+  workspaceId String        @db.Uuid
+  name        String
+  industry    String?
+  status      ProjectStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  intake    Intake?
+  prds      Prd[]
+
+  @@index([workspaceId])
+  @@map("projects")
+}
+
+model Intake {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @unique @db.Uuid
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@map("intakes")
+}
+
+model Prd {
+  id               String   @id @default(uuid()) @db.Uuid
+  projectId        String   @db.Uuid
+  currentVersionId String?  @unique @db.Uuid
+  status           String   @default("draft")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  currentVersion  PrdVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions        PrdVersion[] @relation("PrdVersions")
+
+  @@index([projectId])
+  @@map("prds")
+}
+
+model PrdVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  prdId     String   @db.Uuid
+  versionNo Int
+  content   Json
+  createdBy String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  prd        Prd          @relation("PrdVersions", fields: [prdId], references: [id], onDelete: Cascade)
+  sections   PrdSection[]
+  currentFor Prd?         @relation("CurrentVersion")
+  comments   Comment[]
+
+  @@unique([prdId, versionNo])
+  @@index([prdId])
+  @@map("prd_versions")
+}
+
+model PrdSection {
+  id        String @id @default(uuid()) @db.Uuid
+  versionId String @db.Uuid
+  key       String
+  content   String @db.Text
+  orderIdx  Int
+
+  version PrdVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  @@index([versionId])
+  @@map("prd_sections")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  versionId String   @db.Uuid
+  sectionId String?  @db.Uuid
+  userId    String   @db.Uuid
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  version PrdVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  user    User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([versionId])
+  @@map("comments")
+}
+
+model Subscription {
+  id               String   @id @default(uuid()) @db.Uuid
+  workspaceId      String   @unique @db.Uuid
+  stripeCustomerId String?  @unique
+  stripeSubId      String?  @unique
+  status           String
+  currentPeriodEnd DateTime?
+  plan             Plan     @default(FREE)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@map("subscriptions")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  workspaceId String? @db.Uuid
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([userId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("audit_logs")
+}
