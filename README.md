@@ -41,20 +41,22 @@ Lihat [app/README.md](app/README.md) untuk detail.
 
 ## Branch Strategy
 
+**Default branch: `development`**
+
 | Branch | Purpose | Deploy to |
 |---|---|---|
-| `main` | Production code, always stable | Production (northstar.ai) |
+| `production` | Production code, always stable | Production (northstar.ai) |
 | `staging` | Pre-prod testing, mirrors prod | Staging env |
-| `develop` | Integration branch for features | Preview env (auto) |
+| `development` | Integration branch for features (default) | Preview env (auto) |
 | `feature/*` | Individual features | Preview env per PR |
 | `fix/*` | Bug fixes | Preview env per PR |
 | `docs/*` | Documentation only | No deploy |
 
 ### Workflow
 
-1. **Create feature branch** dari `develop`:
+1. **Create feature branch** dari `development`:
    ```bash
-   git checkout develop
+   git checkout development
    git pull
    git checkout -b feature/project-crud
    ```
@@ -64,23 +66,23 @@ Lihat [app/README.md](app/README.md) untuk detail.
    git push -u origin feature/project-crud
    ```
 
-3. **Open PR** ke `develop` → auto-deploy ke preview.
+3. **Open PR** ke `development` → auto-deploy ke preview.
 
-4. **Merge ke develop** setelah review → test integration.
+4. **Merge ke development** setelah review → test integration.
 
-5. **Release ke staging**: PR `develop` → `staging` → manual QA.
+5. **Release ke staging**: PR `development` → `staging` → manual QA.
 
-6. **Release ke production**: PR `staging` → `main` → deploy production.
+6. **Release ke production**: PR `staging` → `production` → deploy production.
 
 ### Emergency Hotfix
 
 ```bash
-git checkout main
+git checkout production
 git checkout -b fix/critical-bug
 # ... fix ...
 git push -u origin fix/critical-bug
-# PR ke main langsung, merge, deploy
-# Lalu cherry-pick ke develop & staging
+# PR ke production langsung, merge, deploy
+# Lalu cherry-pick ke staging & development
 ```
 
 ## License
