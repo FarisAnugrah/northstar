@@ -33,6 +33,7 @@ Visual architecture & flow diagrams untuk Northstar, AI spec generator (BRD/PCR/
 | 15 | [15-beta-launch-strategy.md](15-beta-launch-strategy.md) | Strategi beta gratis → validasi → launch paid |
 | 16 | [16-positioning.md](16-positioning.md) | Positioning, diferensiasi vs ChatGPT/Notion, ICP, messaging |
 | 17 | [17-project-backlog.md](17-project-backlog.md) | Ide project selanjutnya (pivot, adjacent, wildcards) |
+| 18 | [18-git-workflow.md](18-git-workflow.md) | Branch protection, commit convention, GitHub setup |
 
 ## How to View
 - **GitHub**: render otomatis.
