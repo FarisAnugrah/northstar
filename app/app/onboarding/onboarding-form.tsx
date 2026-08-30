@@ -14,15 +14,15 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
           maxLength={50}
           defaultValue={defaultName ? `${defaultName}'s workspace` : ""}
           placeholder="Acme Inc."
-          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg"
+          className="mt-1 w-full px-3 py-2.5 border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           You can rename this later in settings.
         </p>
       </div>
       <button
         type="submit"
-        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg"
+        className="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors"
       >
         Create workspace
       </button>

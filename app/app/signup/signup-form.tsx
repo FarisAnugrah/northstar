@@ -44,7 +44,7 @@ export function SignupForm() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name"
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        className="w-full px-3 py-2.5 border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
       <input
         type="email"
@@ -52,13 +52,13 @@ export function SignupForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="you@example.com"
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+        className="w-full px-3 py-2.5 border border-border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-accent-rose">{error}</p>}
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg disabled:opacity-50"
+        className="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors disabled:opacity-50"
       >
         {loading ? "Creating..." : "Create account"}
       </button>

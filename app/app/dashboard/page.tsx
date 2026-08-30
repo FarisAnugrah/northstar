@@ -14,35 +14,35 @@ export default async function DashboardPage() {
     <main className="min-h-screen px-6 py-10 max-w-5xl mx-auto">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">{workspace.name}</p>
-          <h1 className="text-3xl font-bold">Projects</h1>
+          <p className="text-sm font-medium text-primary">{workspace.name}</p>
+          <h1 className="mt-1 text-3xl font-bold">Projects</h1>
         </div>
         <Link
           href="/projects/new"
-          className="px-4 py-2 bg-gray-900 text-white rounded-lg"
+          className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors"
         >
           New project
         </Link>
       </header>
 
       {projects.length === 0 ? (
-        <div className="mt-12 text-center py-16 border-2 border-dashed rounded-lg">
-          <p className="text-gray-500">No projects yet.</p>
+        <div className="mt-12 text-center py-16 border-2 border-dashed border-border rounded-3xl bg-surface/50">
+          <p className="text-muted-foreground">No projects yet.</p>
           <Link
             href="/projects/new"
-            className="mt-2 inline-block text-sm font-medium underline"
+            className="mt-2 inline-block text-sm font-semibold text-primary hover:underline"
           >
             Create your first project
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 divide-y border rounded-lg">
+        <ul className="mt-8 divide-y divide-border border border-border rounded-2xl bg-surface shadow-soft">
           {projects.map((p) => (
-            <li key={p.id} className="p-4 hover:bg-gray-50">
+            <li key={p.id} className="p-4 hover:bg-muted transition-colors">
               <Link href={`/projects/${p.id}`} className="block">
                 <p className="font-medium">{p.name}</p>
                 {p.industry && (
-                  <p className="text-sm text-gray-500">{p.industry}</p>
+                  <p className="text-sm text-muted-foreground">{p.industry}</p>
                 )}
               </Link>
             </li>
