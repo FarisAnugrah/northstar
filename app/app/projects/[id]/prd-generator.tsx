@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SECTION_LABELS, PRD_SECTIONS } from "@/lib/prompts";
 import type { PrdSectionKey } from "@/lib/prompts";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 interface SectionState {
   key: PrdSectionKey;
@@ -12,14 +13,30 @@ interface SectionState {
 
 interface PrdGeneratorProps {
   projectId: string;
+  projectName: string;
   hasIntake: boolean;
   initialSections?: { key: string; content: string; done: boolean }[];
+  meta?: {
+    company: string;
+    division: string;
+    team: string[];
+  };
 }
+
+type ExportFormat = "markdown" | "docx" | "pdf";
+
+const DEFAULT_META = {
+  company: "Company Name",
+  division: "Product",
+  team: [],
+};
 
 export function PrdGenerator({
   projectId,
+  projectName,
   hasIntake,
   initialSections,
+  meta = DEFAULT_META,
 }: PrdGeneratorProps) {
   const [sections, setSections] = useState<SectionState[]>(
     initialSections?.map((s) => ({
@@ -32,6 +49,7 @@ export function PrdGenerator({
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -97,6 +115,55 @@ export function PrdGenerator({
     }
   }
 
+  async function handleExport(format: ExportFormat) {
+    setExporting(format);
+    setError(null);
+    try {
+      const doneSections = sections
+        .filter((s) => s.done)
+        .map((s) => ({ key: s.key, content: s.content }));
+
+      const res = await fetch("/api/prd/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: projectName,
+          format,
+          sections: doneSections,
+          meta: {
+            docType: "PRODUCT REQUIREMENT DOCUMENT",
+            version: "1.0",
+            company: meta.company,
+            team: meta.team,
+            productName: projectName,
+            division: meta.division,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json();
+        throw new Error(body.error || "Export failed");
+      }
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      const filename = match?.[1] ?? `prd.${format}`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(null);
+    }
+  }
+
   if (!hasIntake) {
     return (
       <div className="text-muted-foreground">
@@ -112,17 +179,42 @@ export function PrdGenerator({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">PRD</h2>
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors disabled:opacity-50"
-        >
-          {generating
-            ? `Generating... ${Math.round(progress * 100)}%`
-            : allDone && anyDone
-              ? "Regenerate"
-              : "Generate PRD"}
-        </button>
+        <div className="flex items-center gap-2">
+          {allDone && anyDone && (
+            <div className="flex items-center gap-1 rounded-xl border border-border bg-surface p-1 shadow-soft">
+              <span className="px-2 text-xs text-muted-foreground">Export:</span>
+              <ExportButton
+                label="MD"
+                format="markdown"
+                exporting={exporting}
+                onExport={handleExport}
+              />
+              <ExportButton
+                label="Word"
+                format="docx"
+                exporting={exporting}
+                onExport={handleExport}
+              />
+              <ExportButton
+                label="PDF"
+                format="pdf"
+                exporting={exporting}
+                onExport={handleExport}
+              />
+            </div>
+          )}
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors disabled:opacity-50"
+          >
+            {generating
+              ? `Generating... ${Math.round(progress * 100)}%`
+              : allDone && anyDone
+                ? "Regenerate"
+                : "Generate PRD"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -169,103 +261,24 @@ export function PrdGenerator({
   );
 }
 
-function MarkdownRenderer({ content }: { content: string }) {
-  // Minimal Markdown renderer for PRD sections (headings, bullets, bold, tables)
-  const lines = content.split("\n");
-  const out: React.ReactNode[] = [];
-  let inTable = false;
-  let tableRows: string[][] = [];
-  let key = 0;
-
-  const flushTable = () => {
-    if (!inTable || tableRows.length === 0) return;
-    out.push(
-      <div key={`table-${key}`} className="overflow-x-auto my-3">
-        <table className="w-full text-sm border-collapse">
-          <tbody>
-            {tableRows.map((row, ri) => (
-              <tr key={ri} className="border-b border-border">
-                {row.map((cell, ci) => (
-                  <td
-                    key={ci}
-                    className={`px-3 py-2 align-top ${ri === 0 ? "font-semibold bg-muted" : ""}`}
-                  >
-                    {renderInline(cell)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>,
-    );
-    key++;
-    tableRows = [];
-  };
-
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith("|")) {
-      const cells = trimmed.split("|").slice(1, -1).map((c) => c.trim());
-      if (cells.every((c) => /^[-:]+$/.test(c))) return; // separator row
-      if (!inTable) {
-        inTable = true;
-        tableRows = [];
-      }
-      tableRows.push(cells);
-      return;
-    }
-    flushTable();
-    inTable = false;
-
-    const k = key++;
-    if (trimmed === "") return;
-    else if (trimmed.startsWith("### "))
-      out.push(<h4 key={k} className="mt-4 font-semibold">{trimmed.slice(4)}</h4>);
-    else if (trimmed.startsWith("## "))
-      out.push(<h3 key={k} className="mt-5 text-lg font-semibold">{trimmed.slice(3)}</h3>);
-    else if (trimmed.startsWith("# "))
-      out.push(<h2 key={k} className="mt-6 text-xl font-bold">{trimmed.slice(2)}</h2>);
-    else if (trimmed.startsWith("- ") || trimmed.startsWith("* "))
-      out.push(
-        <div key={k} className="flex gap-2 my-1">
-          <span className="text-primary">•</span>
-          <span>{renderInline(trimmed.slice(2))}</span>
-        </div>,
-      );
-    else if (/^\d+\.\s/.test(trimmed))
-      out.push(
-        <div key={k} className="flex gap-2 my-1">
-          <span className="text-muted-foreground">{trimmed.match(/^\d+/)?.[0]}.</span>
-          <span>{renderInline(trimmed.replace(/^\d+\.\s/, ""))}</span>
-        </div>,
-      );
-    else out.push(<p key={k} className="my-2 leading-relaxed">{renderInline(trimmed)}</p>);
-  });
-  flushTable();
-
-  return <div className="text-sm text-foreground/90">{out}</div>;
-}
-
-function renderInline(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  const regex = /(\*\*[^*]+\*\*|`[^`]+`)/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  let k = 0;
-  while ((m = regex.exec(text)) !== null) {
-    if (m.index > last) parts.push(text.slice(last, m.index));
-    const token = m[0];
-    if (token.startsWith("**"))
-      parts.push(<strong key={k++}>{token.slice(2, -2)}</strong>);
-    else if (token.startsWith("`"))
-      parts.push(
-        <code key={k++} className="rounded bg-muted px-1.5 py-0.5 text-xs">
-          {token.slice(1, -1)}
-        </code>,
-      );
-    last = m.index + token.length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return <>{parts}</>;
+function ExportButton({
+  label,
+  format,
+  exporting,
+  onExport,
+}: {
+  label: string;
+  format: ExportFormat;
+  exporting: ExportFormat | null;
+  onExport: (f: ExportFormat) => void;
+}) {
+  return (
+    <button
+      onClick={() => onExport(format)}
+      disabled={exporting === format}
+      className="px-3 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+    >
+      {exporting === format ? "..." : label}
+    </button>
+  );
 }

@@ -53,3 +53,7 @@ ehthumbs.db
 **/*.tmp
 **/tmp/
 **/.cache/
+
+# Large reference documents (institutional PDFs, keep local only)
+reference/
+BRD*.pdf

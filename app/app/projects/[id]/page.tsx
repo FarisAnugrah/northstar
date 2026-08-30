@@ -11,7 +11,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { workspace } = await requireWorkspace();
+  const { user, workspace } = await requireWorkspace();
 
   const project = await prisma.project.findFirst({
     where: { id, workspaceId: workspace.id },
@@ -41,6 +41,12 @@ export default async function ProjectDetailPage({
     }));
   }
 
+  const meta = {
+    company: workspace.name,
+    division: project.industry ?? "Product",
+    team: user.name ? [user.name] : [],
+  };
+
   return (
     <main className="min-h-screen px-6 py-10 max-w-4xl mx-auto">
       <Link
@@ -60,10 +66,12 @@ export default async function ProjectDetailPage({
 
       <ProjectTabs
         projectId={project.id}
+        projectName={project.name}
         initialIntake={intake}
         hasIntake={hasIntake}
         hasPrd={hasPrd}
         initialSections={initialSections}
+        meta={meta}
       />
     </main>
   );
