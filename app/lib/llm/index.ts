@@ -1,0 +1,177 @@
+/**
+ * LLM client abstraction — supports Anthropic Claude + OpenAI GPT + OpenAI-compatible aggregators (Moyra, OpenRouter).
+ * Single interface so the worker can switch providers easily.
+ */
+
+export type Provider = "claude" | "openai" | "moyra";
+
+export interface GenerateOptions {
+  system: string;
+  prompt: string;
+  provider?: Provider;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export interface GenerateResult {
+  text: string;
+  provider: Provider;
+  usage: { inputTokens: number; outputTokens: number };
+}
+
+export async function generateText({
+  system,
+  prompt,
+  provider = "claude",
+  maxTokens = 2000,
+  temperature = 0.4,
+}: GenerateOptions): Promise<GenerateResult> {
+  if (provider === "openai") {
+    return generateOpenAI({ system, prompt, maxTokens, temperature });
+  }
+  if (provider === "moyra") {
+    return generateMoyra({ system, prompt, maxTokens, temperature });
+  }
+  return generateClaude({ system, prompt, maxTokens, temperature });
+}
+
+async function generateClaude({
+  system,
+  prompt,
+  maxTokens,
+  temperature,
+}: Omit<GenerateOptions, "provider">): Promise<GenerateResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      temperature,
+      system,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Claude API error ${res.status}: ${err.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const text = data.content
+    .filter((b: { type: string }) => b.type === "text")
+    .map((b: { text: string }) => b.text)
+    .join("\n");
+
+  return {
+    text,
+    provider: "claude",
+    usage: {
+      inputTokens: data.usage?.input_tokens ?? 0,
+      outputTokens: data.usage?.output_tokens ?? 0,
+    },
+  };
+}
+
+async function generateOpenAI({
+  system,
+  prompt,
+  maxTokens,
+  temperature,
+}: Omit<GenerateOptions, "provider">): Promise<GenerateResult> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY not set");
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      max_tokens: maxTokens,
+      temperature,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`OpenAI API error ${res.status}: ${err.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  return {
+    text: data.choices?.[0]?.message?.content ?? "",
+    provider: "openai",
+    usage: {
+      inputTokens: data.usage?.prompt_tokens ?? 0,
+      outputTokens: data.usage?.completion_tokens ?? 0,
+    },
+  };
+}
+
+async function generateMoyra({
+  system,
+  prompt,
+  maxTokens,
+  temperature,
+}: Omit<GenerateOptions, "provider">): Promise<GenerateResult> {
+  const apiKey = process.env.MOYRA_API_KEY;
+  const baseUrl = process.env.MOYRA_BASE_URL ?? "https://api.moyra.my.id/v1";
+  const model = process.env.MOYRA_MODEL ?? "anthropic/claude-sonnet-4";
+  if (!apiKey) throw new Error("MOYRA_API_KEY not set");
+
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      temperature,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Moyra API error ${res.status}: ${err.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const text =
+    data.choices?.[0]?.message?.content ??
+    data.content
+      ?.filter((b: { type: string }) => b.type === "text")
+      .map((b: { text: string }) => b.text)
+      .join("\n") ??
+    "";
+
+  return {
+    text,
+    provider: "moyra",
+    usage: {
+      inputTokens: data.usage?.prompt_tokens ?? data.usage?.input_tokens ?? 0,
+      outputTokens:
+        data.usage?.completion_tokens ?? data.usage?.output_tokens ?? 0,
+    },
+  };
+}

@@ -3,20 +3,29 @@
 import { useState } from "react";
 import { IntakeForm } from "./intake-form";
 import { IntakeViewer } from "./intake-viewer";
+import { PrdGenerator } from "./prd-generator";
 import type { IntakeData } from "@/lib/intake-schema";
 
 type Tab = "overview" | "intake" | "prd";
+
+interface InitialSection {
+  key: string;
+  content: string;
+  done: boolean;
+}
 
 export function ProjectTabs({
   projectId,
   initialIntake,
   hasIntake,
   hasPrd,
+  initialSections,
 }: {
   projectId: string;
   initialIntake: IntakeData;
   hasIntake: boolean;
   hasPrd: boolean;
+  initialSections?: InitialSection[];
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [intake, setIntake] = useState<IntakeData>(initialIntake);
@@ -97,28 +106,11 @@ export function ProjectTabs({
         )}
 
         {tab === "prd" && (
-          <div className="rounded-3xl bg-surface p-8 shadow-soft">
-            <h2 className="text-xl font-bold">PRD</h2>
-            <div className="mt-4 text-muted-foreground">
-              {!isSaved ? (
-                <p>
-                  Fill in the{" "}
-                  <button
-                    onClick={() => setTab("intake")}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Intake
-                  </button>{" "}
-                  first to enable PRD generation.
-                </p>
-              ) : (
-                <p>
-                  Your intake is ready. PRD generation will be available in the
-                  next phase.
-                </p>
-              )}
-            </div>
-          </div>
+          <PrdGenerator
+            projectId={projectId}
+            hasIntake={isSaved}
+            initialSections={initialSections}
+          />
         )}
       </div>
     </div>

@@ -15,7 +15,10 @@ export default async function ProjectDetailPage({
 
   const project = await prisma.project.findFirst({
     where: { id, workspaceId: workspace.id },
-    include: { intake: true, prds: { take: 1 } },
+    include: {
+      intake: true,
+      prds: { take: 1 },
+    },
   });
 
   if (!project) notFound();
@@ -23,6 +26,20 @@ export default async function ProjectDetailPage({
   const intake: IntakeData = (project.intake?.payload as IntakeData) ?? emptyIntake;
   const hasIntake = !!project.intake;
   const hasPrd = project.prds.length > 0;
+
+  // Load existing PRD sections if PRD is ready
+  let initialSections: { key: string; content: string; done: boolean }[] | undefined;
+  if (hasPrd && project.prds[0].currentVersionId) {
+    const sections = await prisma.prdSection.findMany({
+      where: { versionId: project.prds[0].currentVersionId! },
+      orderBy: { orderIdx: "asc" },
+    });
+    initialSections = sections.map((s) => ({
+      key: s.key,
+      content: s.content,
+      done: true,
+    }));
+  }
 
   return (
     <main className="min-h-screen px-6 py-10 max-w-4xl mx-auto">
@@ -46,6 +63,7 @@ export default async function ProjectDetailPage({
         initialIntake={intake}
         hasIntake={hasIntake}
         hasPrd={hasPrd}
+        initialSections={initialSections}
       />
     </main>
   );
