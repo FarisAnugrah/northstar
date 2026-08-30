@@ -16,16 +16,20 @@ interface InitialSection {
 
 export function ProjectTabs({
   projectId,
+  projectName,
   initialIntake,
   hasIntake,
   hasPrd,
   initialSections,
+  meta,
 }: {
   projectId: string;
+  projectName: string;
   initialIntake: IntakeData;
   hasIntake: boolean;
   hasPrd: boolean;
   initialSections?: InitialSection[];
+  meta?: { company: string; division: string; team: string[] };
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [intake, setIntake] = useState<IntakeData>(initialIntake);
@@ -108,8 +112,10 @@ export function ProjectTabs({
         {tab === "prd" && (
           <PrdGenerator
             projectId={projectId}
+            projectName={projectName}
             hasIntake={isSaved}
             initialSections={initialSections}
+            meta={meta}
           />
         )}
       </div>

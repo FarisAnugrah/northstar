@@ -1,4 +1,4 @@
-import type { IntakeData } from "@/lib/intake-schema";
+import type { IntakeData } from "./intake-schema.ts";
 
 /**
  * PRD section definitions + prompt templates.
