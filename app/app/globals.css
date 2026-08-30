@@ -3,12 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --background: 40 33% 98%;
+  --foreground: 24 10% 10%;
 }
 
 body {
-  color: rgb(var(--foreground));
-  background: rgb(var(--background));
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: hsl(var(--foreground));
+  background:
+    radial-gradient(1200px 600px at 80% -10%, hsl(38 95% 94% / 0.6), transparent 60%),
+    radial-gradient(900px 500px at 0% 10%, hsl(25 95% 95% / 0.5), transparent 55%),
+    hsl(var(--background));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+::selection {
+  background: hsl(25 95% 53% / 0.2);
 }

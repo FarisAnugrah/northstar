@@ -12,9 +12,9 @@ export default async function OnboardingPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md rounded-3xl bg-surface p-8 shadow-lift">
         <h1 className="text-2xl font-bold text-center">Welcome!</h1>
-        <p className="mt-2 text-sm text-gray-600 text-center">
+        <p className="mt-2 text-sm text-muted-foreground text-center">
           Let&apos;s set up your workspace.
         </p>
         <OnboardingForm defaultName={user.name ?? ""} />

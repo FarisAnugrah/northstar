@@ -16,6 +16,9 @@
 **/dist/
 **/.vercel
 **/.turbo
+**/*.tsbuildinfo
+**/tsconfig.tsbuildinfo
+**/next-env.d.ts
 
 # Logs
 **/npm-debug.log*
