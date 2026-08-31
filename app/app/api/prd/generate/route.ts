@@ -5,19 +5,23 @@ import { createClient } from "@/lib/supabase/server";
 import { intakeSchema } from "@/lib/intake-schema";
 import { generatePrdStream } from "@/lib/pipeline";
 
+import { DocType } from "@prisma/client";
+
 const querySchema = z.object({
   projectId: z.string().uuid(),
+  docType: z.enum(["BRD", "PCR", "PRD", "SRS", "FSD", "TSD"]).default("PRD"),
 });
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const parsed = querySchema.safeParse({
     projectId: searchParams.get("projectId"),
+    docType: searchParams.get("docType") || "PRD",
   });
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid projectId" }, { status: 400 });
+    return NextResponse.json({ error: parsed.error.issues.map((i) => i.message).join(", ") }, { status: 400 });
   }
-  const projectId = parsed.data.projectId;
+  const { projectId, docType } = parsed.data;
 
   const supabase = await createClient();
   const {
@@ -65,7 +69,7 @@ export async function GET(request: NextRequest) {
       };
 
       try {
-        const gen = generatePrdStream({ projectId, userId: user.id, intake });
+        const gen = generatePrdStream({ projectId, userId: user.id, intake, docType: docType as any });
         for await (const event of gen) {
           send(event);
           if (event.type === "done" || event.type === "error") break;

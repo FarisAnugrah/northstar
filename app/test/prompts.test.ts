@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  PRD_SECTIONS,
+  DOCUMENT_SECTIONS,
   SECTION_LABELS,
   buildSectionPrompt,
   buildSystemPrompt,
 } from "../lib/prompts.ts";
 import { emptyIntake, type IntakeData } from "../lib/intake-schema.ts";
+
+const PRD_SECTIONS = DOCUMENT_SECTIONS.PRD;
 
 const sample: IntakeData = {
   ...emptyIntake,

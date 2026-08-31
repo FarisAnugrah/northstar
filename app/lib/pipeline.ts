@@ -1,22 +1,22 @@
 /**
- * PRD generation pipeline.
- * MVP: in-process generation (no queue) — generate sequential sections
- * and emit progress via async iterator. Swap with Upstash Redis when scaling.
+ * Document generation pipeline.
+ * Supports multiple docTypes: BRD, PCR, PRD, SRS, FSD, TSD.
+ * Sequential sections generation and streaming via async iterator.
  */
 
 import { prisma } from "@/lib/db";
 import { generateText, type Provider } from "@/lib/llm";
 import {
-  PRD_SECTIONS,
+  DOCUMENT_SECTIONS,
   buildSectionPrompt,
   buildSystemPrompt,
-  type PrdSectionKey,
-} from "@/lib/prompts";
-import type { IntakeData } from "@/lib/intake-schema";
+  type DocType,
+} from "@/lib/prompts.ts";
+import type { IntakeData } from "@/lib/intake-schema.ts";
 
 export interface SectionEvent {
   type: "section";
-  key: PrdSectionKey;
+  key: string;
   content: string;
   index: number;
   total: number;
@@ -40,18 +40,22 @@ export async function* generatePrdStream({
   userId,
   intake,
   provider = "moyra",
+  docType = "PRD",
 }: {
   projectId: string;
   userId: string;
   intake: IntakeData;
   provider?: Provider;
+  docType?: DocType;
 }): AsyncGenerator<PrdEvent, void, void> {
-  const system = buildSystemPrompt(intake);
+  const system = buildSystemPrompt(intake, docType);
+  const sections = DOCUMENT_SECTIONS[docType];
 
-  // Create Prd + PrdVersion in DB
+  // Create document (Prd) + version in DB
   const prd = await prisma.prd.create({
     data: {
       projectId,
+      docType,
       status: "generating",
       versions: {
         create: {
@@ -65,10 +69,10 @@ export async function* generatePrdStream({
   });
   const versionId = prd.versions[0].id;
 
-  for (let i = 0; i < PRD_SECTIONS.length; i++) {
-    const key = PRD_SECTIONS[i];
+  for (let i = 0; i < sections.length; i++) {
+    const key = sections[i];
     try {
-      const prompt = buildSectionPrompt(key, intake);
+      const prompt = buildSectionPrompt(key, intake, docType);
       const result = await generateText({
         system,
         prompt,
@@ -92,7 +96,7 @@ export async function* generatePrdStream({
         key,
         content: result.text,
         index: i + 1,
-        total: PRD_SECTIONS.length,
+        total: sections.length,
       };
       yield event;
     } catch (e) {
