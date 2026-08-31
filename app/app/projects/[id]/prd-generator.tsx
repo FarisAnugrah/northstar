@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { SECTION_LABELS, PRD_SECTIONS } from "@/lib/prompts";
 import type { PrdSectionKey } from "@/lib/prompts";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { PrdEditor } from "./prd-editor";
 
 interface SectionState {
   key: PrdSectionKey;
@@ -21,6 +22,12 @@ interface PrdGeneratorProps {
     division: string;
     team: string[];
   };
+  /** Present when a PRD already exists and is ready to edit. */
+  editorData?: {
+    prdId: string;
+    currentVersionNo: number;
+    sections: { id: string; key: string; content: string }[];
+  };
 }
 
 type ExportFormat = "markdown" | "docx" | "pdf";
@@ -37,7 +44,9 @@ export function PrdGenerator({
   hasIntake,
   initialSections,
   meta = DEFAULT_META,
+  editorData,
 }: PrdGeneratorProps) {
+  const [mode, setMode] = useState<"view" | "edit">("view");
   const [sections, setSections] = useState<SectionState[]>(
     initialSections?.map((s) => ({
       key: s.key as PrdSectionKey,
@@ -214,6 +223,18 @@ export function PrdGenerator({
                 ? "Regenerate"
                 : "Generate PRD"}
           </button>
+          {editorData && allDone && anyDone && (
+            <button
+              onClick={() => setMode(mode === "edit" ? "view" : "edit")}
+              className={`px-5 py-2.5 rounded-xl font-semibold transition-colors ${
+                mode === "edit"
+                  ? "bg-surface border border-border text-foreground hover:bg-muted"
+                  : "bg-accent-violet text-white hover:bg-accent-violet/90"
+              }`}
+            >
+              {mode === "edit" ? "View PRD" : "Edit PRD"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -232,7 +253,14 @@ export function PrdGenerator({
         </div>
       )}
 
-      {!anyDone && !generating ? (
+      {mode === "edit" && editorData && allDone && anyDone ? (
+        <PrdEditor
+          prdId={editorData.prdId}
+          sections={editorData.sections}
+          labels={SECTION_LABELS}
+          currentVersionNo={editorData.currentVersionNo}
+        />
+      ) : !anyDone && !generating ? (
         <div className="text-muted-foreground">
           Click <span className="font-semibold text-foreground">Generate PRD</span>{" "}
           to create your document from the intake.

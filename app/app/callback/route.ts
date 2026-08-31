@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        // Upsert user into DB
         await prisma.user.upsert({
           where: { id: user.id },
           create: {
@@ -27,8 +28,15 @@ export async function GET(request: NextRequest) {
             name: user.user_metadata?.name ?? null,
           },
         });
+
+        // If user has no workspace yet, send them to onboarding
+        const membership = await prisma.membership.findFirst({
+          where: { userId: user.id },
+        });
+        const target = membership ? next : "/onboarding";
+
+        return NextResponse.redirect(`${origin}${target}`);
       }
-      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 

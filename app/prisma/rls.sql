@@ -15,6 +15,13 @@ ALTER TABLE "comments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "subscriptions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "audit_logs" ENABLE ROW LEVEL SECURITY;
 
+-- Prisma internal migration tracking table: enable RLS + deny all (never client-accessible)
+ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "_prisma_migrations_deny_all" ON "_prisma_migrations"
+  FOR ALL
+  USING (false)
+  WITH CHECK (false);
+
 -- Helper: check if current user is a member of a workspace
 CREATE OR REPLACE FUNCTION is_workspace_member(ws_id uuid)
 RETURNS boolean
