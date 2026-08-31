@@ -17,7 +17,10 @@ export default async function ProjectDetailPage({
     where: { id, workspaceId: workspace.id },
     include: {
       intake: true,
-      prds: { take: 1 },
+      prds: {
+        take: 1,
+        include: { _count: { select: { versions: true } } },
+      },
     },
   });
 
@@ -29,16 +32,35 @@ export default async function ProjectDetailPage({
 
   // Load existing PRD sections if PRD is ready
   let initialSections: { key: string; content: string; done: boolean }[] | undefined;
-  if (hasPrd && project.prds[0].currentVersionId) {
-    const sections = await prisma.prdSection.findMany({
-      where: { versionId: project.prds[0].currentVersionId! },
-      orderBy: { orderIdx: "asc" },
-    });
-    initialSections = sections.map((s) => ({
-      key: s.key,
-      content: s.content,
-      done: true,
-    }));
+  let editorData: {
+    prdId: string;
+    currentVersionNo: number;
+    sections: { id: string; key: string; content: string }[];
+  } | undefined;
+  if (hasPrd) {
+    const prd = project.prds[0];
+    // Use currentVersionId, or fall back to the latest version
+    const versionId = prd.currentVersionId;
+    if (versionId) {
+      const sections = await prisma.prdSection.findMany({
+        where: { versionId },
+        orderBy: { orderIdx: "asc" },
+      });
+      initialSections = sections.map((s) => ({
+        key: s.key,
+        content: s.content,
+        done: true,
+      }));
+      editorData = {
+        prdId: prd.id,
+        currentVersionNo: prd._count.versions,
+        sections: sections.map((s) => ({
+          id: s.id,
+          key: s.key,
+          content: s.content,
+        })),
+      };
+    }
   }
 
   const meta = {
@@ -72,6 +94,7 @@ export default async function ProjectDetailPage({
         hasPrd={hasPrd}
         initialSections={initialSections}
         meta={meta}
+        editorData={editorData}
       />
     </main>
   );

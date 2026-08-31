@@ -22,6 +22,7 @@ export function ProjectTabs({
   hasPrd,
   initialSections,
   meta,
+  editorData,
 }: {
   projectId: string;
   projectName: string;
@@ -30,6 +31,11 @@ export function ProjectTabs({
   hasPrd: boolean;
   initialSections?: InitialSection[];
   meta?: { company: string; division: string; team: string[] };
+  editorData?: {
+    prdId: string;
+    currentVersionNo: number;
+    sections: { id: string; key: string; content: string }[];
+  };
 }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [intake, setIntake] = useState<IntakeData>(initialIntake);
@@ -116,6 +122,7 @@ export function ProjectTabs({
             hasIntake={isSaved}
             initialSections={initialSections}
             meta={meta}
+            editorData={editorData}
           />
         )}
       </div>
