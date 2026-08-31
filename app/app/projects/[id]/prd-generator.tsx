@@ -22,9 +22,11 @@ interface PrdGeneratorProps {
     division: string;
     team: string[];
   };
-  /** Present when a PRD already exists and is ready to edit. */
   editorData?: {
     prdId: string;
+    prdStatus: string;
+    canApprove: boolean;
+    currentUserId: string;
     currentVersionNo: number;
     sections: { id: string; key: string; content: string }[];
   };
@@ -256,6 +258,9 @@ export function PrdGenerator({
       {mode === "edit" && editorData && allDone && anyDone ? (
         <PrdEditor
           prdId={editorData.prdId}
+          prdStatus={editorData.prdStatus}
+          canApprove={editorData.canApprove}
+          currentUserId={editorData.currentUserId}
           sections={editorData.sections}
           labels={SECTION_LABELS}
           currentVersionNo={editorData.currentVersionNo}

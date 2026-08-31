@@ -11,7 +11,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace, role } = await requireWorkspace();
 
   const project = await prisma.project.findFirst({
     where: { id, workspaceId: workspace.id },
@@ -34,6 +34,9 @@ export default async function ProjectDetailPage({
   let initialSections: { key: string; content: string; done: boolean }[] | undefined;
   let editorData: {
     prdId: string;
+    prdStatus: string;
+    canApprove: boolean;
+    currentUserId: string;
     currentVersionNo: number;
     sections: { id: string; key: string; content: string }[];
   } | undefined;
@@ -53,6 +56,9 @@ export default async function ProjectDetailPage({
       }));
       editorData = {
         prdId: prd.id,
+        prdStatus: prd.status,
+        canApprove: role === "OWNER" || role === "ADMIN",
+        currentUserId: user.id,
         currentVersionNo: prd._count.versions,
         sections: sections.map((s) => ({
           id: s.id,

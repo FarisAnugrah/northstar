@@ -33,6 +33,9 @@ export function ProjectTabs({
   meta?: { company: string; division: string; team: string[] };
   editorData?: {
     prdId: string;
+    prdStatus: string;
+    canApprove: boolean;
+    currentUserId: string;
     currentVersionNo: number;
     sections: { id: string; key: string; content: string }[];
   };
