@@ -26,6 +26,15 @@ enum ProjectStatus {
   ARCHIVED
 }
 
+enum DocType {
+  BRD
+  PCR
+  PRD
+  SRS
+  FSD
+  TSD
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
@@ -104,6 +113,7 @@ model Intake {
 model Prd {
   id               String   @id @default(uuid()) @db.Uuid
   projectId        String   @db.Uuid
+  docType          DocType  @default(PRD)
   currentVersionId String?  @unique @db.Uuid
   status           String   @default("draft")
   createdAt        DateTime @default(now())
