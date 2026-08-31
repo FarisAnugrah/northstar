@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SECTION_LABELS, PRD_SECTIONS } from "@/lib/prompts";
-import type { PrdSectionKey } from "@/lib/prompts";
+import { DOCUMENT_SECTIONS, SECTION_LABELS, type DocType } from "@/lib/prompts";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { PrdEditor } from "./prd-editor";
 
 interface SectionState {
-  key: PrdSectionKey;
+  key: string;
   content: string;
   done: boolean;
 }
@@ -16,6 +15,7 @@ interface PrdGeneratorProps {
   projectId: string;
   projectName: string;
   hasIntake: boolean;
+  docType?: DocType;
   initialSections?: { key: string; content: string; done: boolean }[];
   meta?: {
     company: string;
@@ -34,6 +34,15 @@ interface PrdGeneratorProps {
 
 type ExportFormat = "markdown" | "docx" | "pdf";
 
+const DOC_TYPE_TITLES: Record<DocType, string> = {
+  BRD: "BUSINESS REQUIREMENT DOCUMENT",
+  PCR: "PROJECT CHANGE REQUEST",
+  PRD: "PRODUCT REQUIREMENT DOCUMENT",
+  SRS: "SOFTWARE REQUIREMENTS SPECIFICATION",
+  FSD: "FUNCTIONAL SPECIFICATION DOCUMENT",
+  TSD: "TECHNICAL SPECIFICATION DOCUMENT",
+};
+
 const DEFAULT_META = {
   company: "Company Name",
   division: "Product",
@@ -44,6 +53,7 @@ export function PrdGenerator({
   projectId,
   projectName,
   hasIntake,
+  docType = "PRD",
   initialSections,
   meta = DEFAULT_META,
   editorData,
@@ -51,11 +61,11 @@ export function PrdGenerator({
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [sections, setSections] = useState<SectionState[]>(
     initialSections?.map((s) => ({
-      key: s.key as PrdSectionKey,
+      key: s.key,
       content: s.content,
       done: s.done,
     })) ??
-      PRD_SECTIONS.map((key) => ({ key, content: "", done: false })),
+      DOCUMENT_SECTIONS[docType].map((key) => ({ key, content: "", done: false })),
   );
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +80,7 @@ export function PrdGenerator({
   async function handleGenerate() {
     setError(null);
     setGenerating(true);
-    setSections(PRD_SECTIONS.map((key) => ({ key, content: "", done: false })));
+    setSections(DOCUMENT_SECTIONS[docType].map((key) => ({ key, content: "", done: false })));
     setProgress(0);
 
     const abort = new AbortController();
@@ -78,7 +88,7 @@ export function PrdGenerator({
 
     try {
       const res = await fetch(
-        `/api/prd/generate?projectId=${projectId}`,
+        `/api/prd/generate?projectId=${projectId}&docType=${docType}`,
         { signal: abort.signal },
       );
       if (!res.ok) {
@@ -142,7 +152,7 @@ export function PrdGenerator({
           format,
           sections: doneSections,
           meta: {
-            docType: "PRODUCT REQUIREMENT DOCUMENT",
+            docType: DOC_TYPE_TITLES[docType],
             version: "1.0",
             company: meta.company,
             team: meta.team,
@@ -160,7 +170,7 @@ export function PrdGenerator({
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="?([^";]+)"?/);
-      const filename = match?.[1] ?? `prd.${format}`;
+      const filename = match?.[1] ?? `${docType.toLowerCase()}.${format}`;
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -178,18 +188,18 @@ export function PrdGenerator({
   if (!hasIntake) {
     return (
       <div className="text-muted-foreground">
-        Fill in the Intake tab first to enable PRD generation.
+        Fill in the Intake tab first to enable {docType} generation.
       </div>
     );
   }
 
   const anyDone = sections.some((s) => s.done);
-  const allDone = sections.every((s) => s.done);
+  const allDone = sections.length > 0 && sections.every((s) => s.done);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">PRD</h2>
+        <h2 className="text-xl font-bold">{docType}</h2>
         <div className="flex items-center gap-2">
           {allDone && anyDone && (
             <div className="flex items-center gap-1 rounded-xl border border-border bg-surface p-1 shadow-soft">
@@ -223,7 +233,7 @@ export function PrdGenerator({
               ? `Generating... ${Math.round(progress * 100)}%`
               : allDone && anyDone
                 ? "Regenerate"
-                : "Generate PRD"}
+                : `Generate ${docType}`}
           </button>
           {editorData && allDone && anyDone && (
             <button
@@ -234,7 +244,7 @@ export function PrdGenerator({
                   : "bg-accent-violet text-white hover:bg-accent-violet/90"
               }`}
             >
-              {mode === "edit" ? "View PRD" : "Edit PRD"}
+              {mode === "edit" ? `View ${docType}` : `Edit ${docType}`}
             </button>
           )}
         </div>
@@ -267,7 +277,7 @@ export function PrdGenerator({
         />
       ) : !anyDone && !generating ? (
         <div className="text-muted-foreground">
-          Click <span className="font-semibold text-foreground">Generate PRD</span>{" "}
+          Click <span className="font-semibold text-foreground">Generate {docType}</span>{" "}
           to create your document from the intake.
         </div>
       ) : (
@@ -282,7 +292,7 @@ export function PrdGenerator({
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-emerald/15 text-xs font-bold text-accent-emerald">
                     {i + 1}
                   </span>
-                  <h3 className="font-semibold">{SECTION_LABELS[s.key]}</h3>
+                  <h3 className="font-semibold">{SECTION_LABELS[s.key] ?? s.key}</h3>
                 </div>
                 <MarkdownRenderer content={s.content} />
               </section>

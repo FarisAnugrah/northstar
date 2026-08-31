@@ -31,7 +31,7 @@ import {
   WidthType,
 } from "docx";
 import PDFDocument from "pdfkit";
-import { SECTION_LABELS, type PrdSectionKey } from "./prompts.ts";
+import { SECTION_LABELS } from "./prompts.ts";
 
 // ---- Corporate theme ----
 const COLORS = {
@@ -354,7 +354,7 @@ export async function toDocx({ title, sections, meta = defaultMeta }: ExportCont
   // Body: each section labelled
   for (const s of sections) {
     if (!s.content.trim()) continue;
-    const label = SECTION_LABELS[s.key as PrdSectionKey] ?? s.key;
+    const label = SECTION_LABELS[s.key] ?? s.key;
     children.push(docxHeading1(label));
     children.push(...parseSectionBlocks(s.content));
   }
@@ -412,7 +412,7 @@ export async function toPdf({ title, sections, meta = defaultMeta }: ExportConte
     const headingBlue = false;
     for (const s of sections) {
       if (!s.content.trim()) continue;
-      const label = SECTION_LABELS[s.key as PrdSectionKey] ?? s.key;
+      const label = SECTION_LABELS[s.key] ?? s.key;
       doc.moveDown(0.4);
       doc.fontSize(15).font("Helvetica-Bold").fillColor("#000000").text(label);
       doc.moveDown(0.1);
