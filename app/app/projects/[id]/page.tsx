@@ -4,6 +4,7 @@ import { requireWorkspace } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { emptyIntake, type IntakeData } from "@/lib/intake-schema";
 import { ProjectTabs } from "./project-tabs";
+import type { DocType } from "@/lib/prompts";
 
 export default async function ProjectDetailPage({
   params,
@@ -18,7 +19,6 @@ export default async function ProjectDetailPage({
     include: {
       intake: true,
       prds: {
-        take: 1,
         include: { _count: { select: { versions: true } } },
       },
     },
@@ -28,9 +28,19 @@ export default async function ProjectDetailPage({
 
   const intake: IntakeData = (project.intake?.payload as IntakeData) ?? emptyIntake;
   const hasIntake = !!project.intake;
-  const hasPrd = project.prds.length > 0;
 
-  // Load existing PRD sections if PRD is ready
+  // Index existing docs by docType for quick lookup
+  const docsByType = new Map<DocType, (typeof project.prds)[number]>();
+  for (const prd of project.prds) {
+    if (!docsByType.has(prd.docType as DocType)) {
+      docsByType.set(prd.docType as DocType, prd);
+    }
+  }
+
+  // Load sections for a specific doc (latest by updatedAt)
+  const prds = [...project.prds].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  const activePrd = prds[0];
+
   let initialSections: { key: string; content: string; done: boolean }[] | undefined;
   let editorData: {
     prdId: string;
@@ -40,34 +50,35 @@ export default async function ProjectDetailPage({
     currentVersionNo: number;
     sections: { id: string; key: string; content: string }[];
   } | undefined;
-  if (hasPrd) {
-    const prd = project.prds[0];
-    // Use currentVersionId, or fall back to the latest version
-    const versionId = prd.currentVersionId;
-    if (versionId) {
-      const sections = await prisma.prdSection.findMany({
-        where: { versionId },
-        orderBy: { orderIdx: "asc" },
-      });
-      initialSections = sections.map((s) => ({
+  if (activePrd?.currentVersionId) {
+    const sections = await prisma.prdSection.findMany({
+      where: { versionId: activePrd.currentVersionId },
+      orderBy: { orderIdx: "asc" },
+    });
+    initialSections = sections.map((s) => ({
+      key: s.key,
+      content: s.content,
+      done: true,
+    }));
+    editorData = {
+      prdId: activePrd.id,
+      prdStatus: activePrd.status,
+      canApprove: role === "OWNER" || role === "ADMIN",
+      currentUserId: user.id,
+      currentVersionNo: activePrd._count.versions,
+      sections: sections.map((s) => ({
+        id: s.id,
         key: s.key,
         content: s.content,
-        done: true,
-      }));
-      editorData = {
-        prdId: prd.id,
-        prdStatus: prd.status,
-        canApprove: role === "OWNER" || role === "ADMIN",
-        currentUserId: user.id,
-        currentVersionNo: prd._count.versions,
-        sections: sections.map((s) => ({
-          id: s.id,
-          key: s.key,
-          content: s.content,
-        })),
-      };
-    }
+      })),
+    };
   }
+
+  const existingDocs = project.prds.map((p) => ({
+    docType: p.docType as DocType,
+    status: p.status,
+    updatedAt: p.updatedAt.toISOString(),
+  }));
 
   const meta = {
     company: workspace.name,
@@ -97,10 +108,11 @@ export default async function ProjectDetailPage({
         projectName={project.name}
         initialIntake={intake}
         hasIntake={hasIntake}
-        hasPrd={hasPrd}
         initialSections={initialSections}
         meta={meta}
         editorData={editorData}
+        existingDocs={existingDocs}
+        hasAnyDoc={project.prds.length > 0}
       />
     </main>
   );
