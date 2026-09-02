@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireWorkspace } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { emptyIntake, type IntakeData } from "@/lib/intake-schema";
-import { ProjectTabs } from "./project-tabs";
+import { ProjectPipeline } from "./project-pipeline";
 import type { DocType } from "@/lib/prompts";
 
 export default async function ProjectDetailPage({
@@ -103,7 +103,7 @@ export default async function ProjectDetailPage({
         )}
       </header>
 
-      <ProjectTabs
+      <ProjectPipeline
         projectId={project.id}
         projectName={project.name}
         initialIntake={intake}
@@ -112,7 +112,6 @@ export default async function ProjectDetailPage({
         meta={meta}
         editorData={editorData}
         existingDocs={existingDocs}
-        hasAnyDoc={project.prds.length > 0}
       />
     </main>
   );
