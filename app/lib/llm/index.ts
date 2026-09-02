@@ -4,7 +4,7 @@ import { checkCircuit, recordSuccess, recordFailure } from "./circuit-breaker";
  * Single interface so the worker can switch providers easily.
  */
 
-export type Provider = "claude" | "openai" | "moyra";
+export type Provider = "claude" | "openai" | "moyra" | "gemini";
 
 export interface GenerateOptions {
   system: string;
@@ -35,6 +35,8 @@ export async function generateText({
       result = await generateOpenAI({ system, prompt, maxTokens, temperature });
     } else if (provider === "moyra") {
       result = await generateMoyra({ system, prompt, maxTokens, temperature });
+    } else if (provider === "gemini") {
+      result = await generateGemini({ system, prompt, maxTokens, temperature });
     } else {
       result = await generateClaude({ system, prompt, maxTokens, temperature });
     }
@@ -184,6 +186,54 @@ async function generateMoyra({
       inputTokens: data.usage?.prompt_tokens ?? data.usage?.input_tokens ?? 0,
       outputTokens:
         data.usage?.completion_tokens ?? data.usage?.output_tokens ?? 0,
+    },
+  };
+}
+
+async function generateGemini({
+  system,
+  prompt,
+  maxTokens,
+  temperature,
+}: Omit<GenerateOptions, "provider">): Promise<GenerateResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+
+  // Format system prompt and user prompt
+  const combinedPrompt = system ? `System: ${system}\n\nUser: ${prompt}` : prompt;
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: combinedPrompt }]
+        }
+      ],
+      generationConfig: {
+        maxOutputTokens: maxTokens,
+        temperature: temperature,
+      }
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${err.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+  return {
+    text,
+    provider: "gemini",
+    usage: {
+      inputTokens: data.usageMetadata?.promptTokenCount ?? 0,
+      outputTokens: data.usageMetadata?.candidatesTokenCount ?? 0,
     },
   };
 }

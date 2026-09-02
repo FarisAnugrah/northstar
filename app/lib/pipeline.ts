@@ -39,7 +39,7 @@ export async function* generatePrdStream({
   projectId,
   userId,
   intake,
-  provider = "moyra",
+  provider = "gemini",
   docType = "PRD",
 }: {
   projectId: string;
