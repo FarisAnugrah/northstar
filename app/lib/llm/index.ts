@@ -1,3 +1,4 @@
+import { checkCircuit, recordSuccess, recordFailure } from "./circuit-breaker";
 /**
  * LLM client abstraction — supports Anthropic Claude + OpenAI GPT + OpenAI-compatible aggregators (Moyra, OpenRouter).
  * Single interface so the worker can switch providers easily.
@@ -26,13 +27,24 @@ export async function generateText({
   maxTokens = 2000,
   temperature = 0.4,
 }: GenerateOptions): Promise<GenerateResult> {
-  if (provider === "openai") {
-    return generateOpenAI({ system, prompt, maxTokens, temperature });
+  await checkCircuit(provider);
+  
+  try {
+    let result: GenerateResult;
+    if (provider === "openai") {
+      result = await generateOpenAI({ system, prompt, maxTokens, temperature });
+    } else if (provider === "moyra") {
+      result = await generateMoyra({ system, prompt, maxTokens, temperature });
+    } else {
+      result = await generateClaude({ system, prompt, maxTokens, temperature });
+    }
+    
+    await recordSuccess(provider);
+    return result;
+  } catch (error) {
+    await recordFailure(provider);
+    throw error;
   }
-  if (provider === "moyra") {
-    return generateMoyra({ system, prompt, maxTokens, temperature });
-  }
-  return generateClaude({ system, prompt, maxTokens, temperature });
 }
 
 async function generateClaude({
