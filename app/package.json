@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@sentry/nextjs": "^10.73.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.46.1",
     "@tailwindcss/typography": "^0.5.20",
@@ -26,6 +27,7 @@
     "lucide-react": "^1.39.0",
     "next": "14.2.18",
     "pdfkit": "^0.20.2",
+    "posthog-js": "^1.424.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^10.1.0",
