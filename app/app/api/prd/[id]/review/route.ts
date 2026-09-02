@@ -1,3 +1,4 @@
+import { sendReviewRequestEmail, sendReviewDecisionEmail } from "@/lib/email/resend";
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
@@ -47,7 +48,49 @@ export async function POST(
     const updated = await prisma.prd.update({
       where: { id: prd.id },
       data: { status: nextStatus[action] },
+      include: {
+        currentVersion: true,
+      }
     });
+
+    // Notify users
+    const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const docUrl = `${origin}/projects/${prd.project.id}`;
+    const docType = prd.docType;
+
+    if (action === "submit") {
+      // Find admins/owners to notify
+      const admins = await prisma.membership.findMany({
+        where: { 
+          workspaceId: prd.project.workspaceId,
+          role: { in: ["OWNER", "ADMIN"] } 
+        },
+        include: { user: true }
+      });
+      
+      const toEmails = admins.map(m => m.user.email);
+      if (toEmails.length > 0) {
+        await sendReviewRequestEmail(toEmails, docType, prd.project.name, user.email || "A team member", docUrl);
+      }
+    } else if (action === "approve" || action === "reject") {
+      // Notify the person who submitted it (the creator of the current version)
+      if (updated.currentVersion) {
+        const creator = await prisma.user.findUnique({
+          where: { id: updated.currentVersion.createdBy }
+        });
+        
+        if (creator && creator.email) {
+          await sendReviewDecisionEmail(
+            [creator.email], 
+            docType, 
+            prd.project.name, 
+            user.email || "An admin", 
+            action === "approve" ? "approved" : "rejected", 
+            docUrl
+          );
+        }
+      }
+    }
 
     return NextResponse.json({ status: updated.status });
   } catch (e) {
