@@ -63,7 +63,7 @@ export function DashboardClient({
     { key: "all", label: "All" },
     { key: "ready", label: "Ready" },
     { key: "draft", label: "Draft" },
-    { key: "no_prd", label: "No PRD" },
+    { key: "no_prd", label: "No Docs" },
   ];
 
   return (
@@ -72,7 +72,7 @@ export function DashboardClient({
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 tour-stats-card">
         <StatCard label="Projects" value={stats.projects} />
-        <StatCard label="Total PRDs" value={stats.prds} />
+        <StatCard label="Total Docs" value={stats.prds} />
         <StatCard label="Ready" value={stats.ready} accent />
       </div>
 
