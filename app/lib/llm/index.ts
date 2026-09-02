@@ -202,7 +202,7 @@ async function generateGemini({
   // Format system prompt and user prompt
   const combinedPrompt = system ? `System: ${system}\n\nUser: ${prompt}` : prompt;
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
