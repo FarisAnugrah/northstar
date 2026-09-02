@@ -38,12 +38,19 @@ export default async function DashboardPage() {
     <main className="min-h-screen px-6 py-10 max-w-6xl mx-auto">
       <header className="flex items-center justify-between">
         <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Welcome to your workspace, {workspace.name}
+          </p>
+        </div>
+
+        <div>
           <p className="text-sm font-medium text-primary">{workspace.name}</p>
           <h1 className="mt-1 text-3xl font-bold">Dashboard</h1>
         </div>
         <Link
           href="/projects/new"
-          className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors"
+          className="tour-new-project-btn px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-soft hover:bg-primary-hover transition-colors"
         >
           + New project
         </Link>

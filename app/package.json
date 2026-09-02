@@ -22,6 +22,7 @@
     "@tiptap/react": "^2.27.2",
     "@tiptap/starter-kit": "^2.27.2",
     "docx": "^9.7.1",
+    "driver.js": "^1.8.0",
     "lucide-react": "^1.39.0",
     "next": "14.2.18",
     "pdfkit": "^0.20.2",

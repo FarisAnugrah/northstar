@@ -1,3 +1,5 @@
+import { OnboardingTour } from "./onboarding-tour";
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -65,8 +67,9 @@ export function DashboardClient({
 
   return (
     <div className="mt-8 space-y-6">
+      <OnboardingTour />
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-4 tour-stats-card">
         <StatCard label="Projects" value={stats.projects} />
         <StatCard label="Total PRDs" value={stats.prds} />
         <StatCard label="Ready" value={stats.ready} accent />
