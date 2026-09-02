@@ -21,6 +21,7 @@
     "@tiptap/pm": "^2.27.2",
     "@tiptap/react": "^2.27.2",
     "@tiptap/starter-kit": "^2.27.2",
+    "@upstash/redis": "^1.38.3",
     "docx": "^9.7.1",
     "driver.js": "^1.8.0",
     "lucide-react": "^1.39.0",
