@@ -11,20 +11,20 @@ interface ProjectSummary {
   name: string;
   industry: string | null;
   hasIntake: boolean;
-  prdStatus: string | null;
+  docStatus: string | null;
   updatedAt: string;
 }
 
 interface Stats {
   projects: number;
-  prds: number;
+  docs: number;
   ready: number;
 }
 
-type StatusFilter = "all" | "ready" | "draft" | "no_prd";
+type StatusFilter = "all" | "ready" | "draft" | "no_docs";
 
 const STATUS_LABEL: Record<string, string> = {
-  ready: "PRD ready",
+  ready: "Doc ready",
   generating: "Generating",
   draft: "Draft",
 };
@@ -54,8 +54,8 @@ export function DashboardClient({
       }
       // filter
       if (filter === "all") return true;
-      if (filter === "no_prd") return !p.prdStatus;
-      return p.prdStatus === filter;
+      if (filter === "no_docs") return !p.docStatus;
+      return p.docStatus === filter;
     });
   }, [initialProjects, query, filter]);
 
@@ -63,7 +63,7 @@ export function DashboardClient({
     { key: "all", label: "All" },
     { key: "ready", label: "Ready" },
     { key: "draft", label: "Draft" },
-    { key: "no_prd", label: "No Docs" },
+    { key: "no_docs", label: "No Docs" },
   ];
 
   return (
@@ -72,7 +72,7 @@ export function DashboardClient({
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 tour-stats-card">
         <StatCard label="Projects" value={stats.projects} />
-        <StatCard label="Total Docs" value={stats.prds} />
+        <StatCard label="Total Docs" value={stats.docs} />
         <StatCard label="Ready" value={stats.ready} accent />
       </div>
 
@@ -130,15 +130,15 @@ export function DashboardClient({
                 <h3 className="font-semibold leading-snug group-hover:text-primary transition-colors">
                   {p.name}
                 </h3>
-                {p.prdStatus ? (
+                {p.docStatus ? (
                   <span
-                    className={`shrink-0 px-2 py-0.5 text-xs rounded-full font-medium ${STATUS_COLOR[p.prdStatus] ?? STATUS_COLOR.draft}`}
+                    className={`shrink-0 px-2 py-0.5 text-xs rounded-full font-medium ${STATUS_COLOR[p.docStatus] ?? STATUS_COLOR.draft}`}
                   >
-                    {STATUS_LABEL[p.prdStatus] ?? p.prdStatus}
+                    {STATUS_LABEL[p.docStatus] ?? p.docStatus}
                   </span>
                 ) : (
                   <span className="shrink-0 px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground font-medium">
-                    No PRD
+                    No Docs
                   </span>
                 )}
               </div>

@@ -30,7 +30,7 @@ export default async function DashboardPage() {
 
   const stats = {
     projects: projectCount,
-    prds: prdCount,
+    docs: prdCount,
     ready: readyPrdCount,
   };
 
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
           name: p.name,
           industry: p.industry,
           hasIntake: !!p.intake,
-          prdStatus: p.prds[0]?.status ?? null,
+          docStatus: p.prds[0]?.status ?? null,
           updatedAt: p.updatedAt.toISOString(),
         }))}
       />
